@@ -1,0 +1,39 @@
+
+Report Summary
+
+┌───────────────────────┬───────────┬───────────────────┐
+│        Target         │   Type    │ Misconfigurations │
+├───────────────────────┼───────────┼───────────────────┤
+│ .                     │ terraform │         0         │
+├───────────────────────┼───────────┼───────────────────┤
+│ rds_security_group.tf │ terraform │         1         │
+└───────────────────────┴───────────┴───────────────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
+
+rds_security_group.tf (terraform)
+=================================
+Tests: 1 (SUCCESSES: 0, FAILURES: 1)
+Failures: 1 (UNKNOWN: 0, LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 1)
+
+AWS-0104 (CRITICAL): Security group rule allows unrestricted egress to any IP address.
+════════════════════════════════════════════════════════════════════════════
+Opening up ports to connect out to the public internet is generally to be avoided. You should restrict access to IP addresses or ranges that are explicitly required where possible.
+
+
+See https://avd.aquasec.com/misconfig/aws-0104
+────────────────────────────────────────────────────────────────────────────
+ rds_security_group.tf:23
+   via rds_security_group.tf:18-24 (egress)
+    via rds_security_group.tf:5-29 (aws_security_group.rds)
+────────────────────────────────────────────────────────────────────────────
+   5   resource "aws_security_group" "rds" {
+   .   
+  23 [     cidr_blocks = ["0.0.0.0/0"]
+  ..   
+  29   }
+────────────────────────────────────────────────────────────────────────────
+
+

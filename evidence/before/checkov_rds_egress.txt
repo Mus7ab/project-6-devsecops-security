@@ -1,0 +1,96 @@
+
+       _               _
+   ___| |__   ___  ___| | _______   __
+  / __| '_ \ / _ \/ __| |/ / _ \ \ / /
+ | (__| | | |  __/ (__|   < (_) \ V /
+  \___|_| |_|\___|\___|_|\_\___/ \_/
+
+By Prisma Cloud | version: 3.3.11 
+
+terraform scan results:
+
+Passed checks: 5, Failed checks: 2, Skipped checks: 0
+
+Check: CKV_AWS_25: "Ensure no security groups allow ingress from 0.0.0.0:0 to port 3389"
+	PASSED for resource: aws_security_group.rds
+	File: /rds_security_group.tf:5-29
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-2
+Check: CKV_AWS_23: "Ensure every security group and rule has a description"
+	PASSED for resource: aws_security_group.rds
+	File: /rds_security_group.tf:5-29
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-31
+Check: CKV_AWS_24: "Ensure no security groups allow ingress from 0.0.0.0:0 to port 22"
+	PASSED for resource: aws_security_group.rds
+	File: /rds_security_group.tf:5-29
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/networking-1-port-security
+Check: CKV_AWS_260: "Ensure no security groups allow ingress from 0.0.0.0:0 to port 80"
+	PASSED for resource: aws_security_group.rds
+	File: /rds_security_group.tf:5-29
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-aws-security-groups-do-not-allow-ingress-from-00000-to-port-80
+Check: CKV_AWS_277: "Ensure no security groups allow ingress from 0.0.0.0:0 to port -1"
+	PASSED for resource: aws_security_group.rds
+	File: /rds_security_group.tf:5-29
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-aws-security-group-does-not-allow-all-traffic-on-all-ports
+Check: CKV_AWS_382: "Ensure no security groups allow egress from 0.0.0.0:0 to port -1"
+	FAILED for resource: aws_security_group.rds
+	File: /rds_security_group.tf:5-29
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/bc-aws-382
+
+		5  | resource "aws_security_group" "rds" {
+		6  |   name        = "example-rds-sg"
+		7  |   description = "Allow PostgreSQL from EC2 instances"
+		8  |   vpc_id      = "vpc-EXAMPLE"
+		9  | 
+		10 |   ingress {
+		11 |     description     = "PostgreSQL from EC2"
+		12 |     from_port       = 5432
+		13 |     to_port         = 5432
+		14 |     protocol        = "tcp"
+		15 |     security_groups = ["sg-EXAMPLE"]
+		16 |   }
+		17 | 
+		18 |   egress {
+		19 |     description = "Allow all outbound"
+		20 |     from_port   = 0
+		21 |     to_port     = 0
+		22 |     protocol    = "-1"
+		23 |     cidr_blocks = ["0.0.0.0/0"]
+		24 |   }
+		25 | 
+		26 |   tags = {
+		27 |     Name = "example-rds-sg"
+		28 |   }
+		29 | }
+
+Check: CKV2_AWS_5: "Ensure that Security Groups are attached to another resource"
+	FAILED for resource: aws_security_group.rds
+	File: /rds_security_group.tf:5-29
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-networking-policies/ensure-that-security-groups-are-attached-to-ec2-instances-or-elastic-network-interfaces-enis
+
+		5  | resource "aws_security_group" "rds" {
+		6  |   name        = "example-rds-sg"
+		7  |   description = "Allow PostgreSQL from EC2 instances"
+		8  |   vpc_id      = "vpc-EXAMPLE"
+		9  | 
+		10 |   ingress {
+		11 |     description     = "PostgreSQL from EC2"
+		12 |     from_port       = 5432
+		13 |     to_port         = 5432
+		14 |     protocol        = "tcp"
+		15 |     security_groups = ["sg-EXAMPLE"]
+		16 |   }
+		17 | 
+		18 |   egress {
+		19 |     description = "Allow all outbound"
+		20 |     from_port   = 0
+		21 |     to_port     = 0
+		22 |     protocol    = "-1"
+		23 |     cidr_blocks = ["0.0.0.0/0"]
+		24 |   }
+		25 | 
+		26 |   tags = {
+		27 |     Name = "example-rds-sg"
+		28 |   }
+		29 | }
+
+
