@@ -1,0 +1,23 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+
+# Secrets / credentials
+*.pem
+*.key
+.env
+.env.*
+secrets.yml
+secrets.yaml
+
+# OS/editor cruft
+.DS_Store
+.vscode/
+*.swp
+
+# Python (Checkov, if we run it inside a venv here)
+__pycache__/
+*.pyc
