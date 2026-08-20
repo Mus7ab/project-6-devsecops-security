@@ -31,3 +31,37 @@
 - **Priority:** High — but remediation is out of scope for a documentation-only exercise; requires either (a) codifying the IAM user in Terraform with least-privilege permissions so it becomes scannable, or (b) migrating CI to OIDC role assumption, eliminating long-lived credentials entirely.
 - **Evidence:** `.github/workflows/terraform.yml` (inspected directly), grep search output (not saved as a file — command and empty result documented here)
 - **Status:** Documented, not remediated — flagged as a recommendation for Project 1 going forward
+
+---
+
+## Finding 3: Orders/Users Service Dockerfile — Missing Non-Root USER
+
+- **Domain:** Container Security
+- **Source project:** Project 2 (microservices-orders-users) — `services/orders/Dockerfile`, `services/users/Dockerfile` (identical)
+- **Asset:** Container image built from `node:20-alpine`
+- **Detection tool:** Trivy (misconfiguration scan)
+- **Rule ID:** `DS-0002` — Severity: HIGH — "Specify at least 1 USER command in Dockerfile with non-root user as argument"
+- **Description:** No `USER` instruction was present in the Dockerfile. Without one, the container's process runs as root by default.
+- **Risk:** If code execution is achieved inside the container via any vulnerability, running as root grants the attacker full control within the container boundary and a stronger position for any container-escape attempt.
+- **Verification that a non-root user was available:** Confirmed via `docker run --rm node:20-alpine cat /etc/passwd` that the base image ships a built-in `node` user (UID 1000, GID 1000).
+- **Evidence:** `evidence/before/trivy_dockerfile_misconfig.txt`, `evidence/after/trivy_dockerfile_misconfig.txt`
+- **Status:** Remediated (see `docs/remediation.md`)
+
+---
+
+## Finding 4: OpenSSL CVEs in node:20-alpine Base Image — Accepted Risk (Upstream Not Yet Patched)
+
+- **Domain:** Container Security
+- **Source project:** Project 2 (microservices-orders-users) — base image `node:20-alpine`
+- **Asset:** `libcrypto3` / `libssl3` packages (Alpine 3.23.4) inside the built container image
+- **Detection tool:** Trivy (vulnerability scan)
+- **Notable CVEs:** `CVE-2026-45447` (HIGH — Heap Use-After-Free in OpenSSL PKCS7_verify()), plus 12 additional MEDIUM/LOW OpenSSL CVEs — installed version `3.5.6-r0`, fixed version `3.5.7-r0`
+- **Description:** The current `node:20-alpine` image, as published, bundles an OpenSSL version with known CVEs. Confirmed via `docker pull node:20-alpine` that this is the latest available image under this tag (digest unchanged) — the patched OpenSSL version is not yet available upstream at this tag.
+- **Why this could not be remediated via a simple rebuild:** A base image rebuild only picks up a fix if the maintainer has published one. As of this scan, they have not.
+- **Risk:** The vulnerable OpenSSL library remains present inside the container regardless of network-layer controls.
+- **Exposure / Compensating control:** In Project 2's actual architecture, this container is not directly internet-facing — external HTTP/HTTPS traffic is routed through an Application Load Balancer (ALB), and ECS tasks run within private-subnet networking protected by security groups. This reduces the network paths through which the vulnerable library could be reached, but does not eliminate the vulnerability itself.
+- **Decision:** Accept temporarily, with monitoring. Re-scan periodically (or via CI once Phase 6 is built) and remediate via base image rebuild as soon as an upstream patch is published.
+- **Approval:** Self-approved for this portfolio exercise (no formal approval chain applicable).
+- **Review/Expiration:** Revisit at next scheduled scan; treat as expired/overdue if unresolved after 30 days from an upstream patch becoming available.
+- **Evidence:** `evidence/before/trivy_image_vuln.txt` (vulnerable and remediated builds show identical OpenSSL CVE set)
+- **Status:** Documented, accepted with compensating control — not remediated (upstream limitation)

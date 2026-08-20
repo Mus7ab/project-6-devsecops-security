@@ -23,3 +23,28 @@
 **Known limitation of this verification:** This exercise scanned an isolated example file, not deployed infrastructure. Application-level verification — confirming the live Project 1 RDS instance has no legitimate outbound dependency that this change would break — was not performed, since doing so would require deploying real AWS infrastructure, which is out of scope for this documentation exercise per the project's cost-safety approach. If this fix were applied to the actual Project 1 environment, that verification step would be required before merging.
 
 **Status:** Remediated and verified at the static-analysis level. Application-level verification remains an open item if ported to production.
+
+---
+
+## Remediation 2: Orders/Users Dockerfile — Missing Non-Root USER
+
+**Related finding:** `docs/findings.md` — Finding 3
+
+**Root cause:** The Dockerfile never specified a `USER` instruction, so Docker's default behavior (run as root) applied silently. This is a common oversight in minimal example Dockerfiles that were never hardened past "it works."
+
+**Remediation decision process:**
+1. Verified the base image (`node:20-alpine`) ships a usable non-root user (`node`, UID 1000) before assuming one needed to be created manually.
+2. Added `USER node` after all file operations requiring root (`COPY`, `RUN npm install`) but before the container's runtime `CMD`, so the build steps still have the permissions they need while the running process does not.
+
+**Fix applied:** Added `USER node` to the Dockerfile, positioned after `COPY app.js .` and before `EXPOSE`/`CMD`.
+
+**Verification:**
+- Re-ran Trivy misconfiguration scan: `DS-0002` no longer appears in failures (2 failures → 1, only the unrelated `DS-0026` HEALTHCHECK finding remains) — see `evidence/before/trivy_dockerfile_misconfig.txt` and `evidence/after/trivy_dockerfile_misconfig.txt`.
+
+**Runtime verification (closed):** Directly confirmed the effective container user via `docker run --rm <image> whoami`:
+- `orders-service:vulnerable` → `root`
+- `orders-service:remediated` → `node`
+
+This confirms the fix takes effect at runtime, not just in the static Dockerfile instructions.
+
+**Status:** Remediated and verified via both static analysis and direct runtime confirmation.
