@@ -65,3 +65,32 @@
 - **Review/Expiration:** Revisit at next scheduled scan; treat as expired/overdue if unresolved after 30 days from an upstream patch becoming available.
 - **Evidence:** `evidence/before/trivy_image_vuln.txt` (vulnerable and remediated builds show identical OpenSSL CVE set)
 - **Status:** Documented, accepted with compensating control — not remediated (upstream limitation)
+
+---
+
+## Finding 5: Orders Helm Chart — Missing Pod/Container Security Context
+
+- **Domain:** Kubernetes Security
+- **Source project:** Project 3 (eks-kubernetes-microservices) — `orders-chart/values.yaml`, rendered via `orders-chart/templates/deployment.yaml`
+- **Asset:** Deployment `release-name-orders-chart` (orders-chart container)
+- **Detection tools:** Trivy, Checkov (both independently detected the same root cause via different rule sets)
+- **Key rule IDs:**
+  - Trivy: `KSV-0118` (HIGH — using default security context, allows root privileges), `KSV-0014` (HIGH — readOnlyRootFilesystem not set), `KSV-0001`/`KSV-0012` (MEDIUM — allowPrivilegeEscalation/runAsNonRoot not set), `KSV-0003`/`KSV-0004`/`KSV-0106` (LOW — capabilities not dropped), `KSV-0030`/`KSV-0104` (seccomp profile missing)
+  - Checkov: `CKV_K8S_29`/`CKV_K8S_30` (no security context applied), `CKV_K8S_20` (privilege escalation), `CKV_K8S_23` (root containers), `CKV_K8S_37`/`CKV_K8S_28` (capabilities), `CKV_K8S_22` (read-only filesystem), `CKV_K8S_31` (seccomp)
+- **Root cause:** `values.yaml` shipped with the standard Helm scaffold defaults (`podSecurityContext: {}`, `securityContext: {}`) — the security hardening options were present in commented-out form but never enabled.
+- **Investigation method (before scanning):** Manually inspected `deployment.yaml`, identified that `securityContext` blocks are conditionally rendered via Helm's `{{- with }}` directive — meaning an empty `values.yaml` entry results in the block being omitted entirely from the rendered manifest, not defaulted to a safe value. Confirmed via `helm template` before running any scanner.
+- **Risk:** A compromised container process would run as root, retain default Linux capabilities, be able to write to its own root filesystem (enabling tampering/persistence), and escalate privileges — a substantially larger blast radius than the equivalent finding in Project 2's ECS containers (Finding 3), since a Kubernetes compromise can extend to node-level and cluster-level attack paths.
+- **Evidence:** `evidence/before/trivy_k8s_securitycontext.txt`, `evidence/before/checkov_k8s_securitycontext.txt`
+- **Status:** Remediated and runtime-verified (see `docs/remediation.md`)
+
+---
+
+## Finding 6: Kubernetes Security — Deliberately Out-of-Scope Items
+
+The following real findings from the same scan were identified but not remediated today, per Section 6 (minimum appropriate toolchain, avoid scope creep for diminishing returns):
+
+- **Helm test-connection pod (`wget`/busybox container):** Still lacks a security context after remediation, since it is defined in a separate template (`templates/tests/test-connection.yaml`) not covered by the `values.yaml` change. Lower priority: this is a transient `helm test` hook, not a persistent workload, and has a substantially smaller attack window than the main Deployment.
+- **Resource limits/requests (`KSV-0011/0015/0016/0018`, `CKV_K8S_10/11/12/13`):** Not security-context findings — these relate to reliability/DoS-resistance (unbounded pods can starve node resources). Real, but a different domain than this finding's threat model.
+- **Default namespace usage (`KSV-0110`, `CKV_K8S_21`) and missing NetworkPolicy (`CKV2_K8S_6`, Checkov-only):** Real architectural findings — namespace segmentation and network policy enforcement are legitimate Kubernetes security controls, but represent a larger structural change than a `values.yaml` edit. Documented honestly as a recommendation rather than forced into today's session.
+
+**Status:** Documented, not remediated — candidates for future work if this project's scope is extended.

@@ -1,0 +1,652 @@
+
+Report Summary
+
+┌─────────────────────────────────┬────────────┬───────────────────┐
+│             Target              │    Type    │ Misconfigurations │
+├─────────────────────────────────┼────────────┼───────────────────┤
+│ rendered-orders-vulnerable.yaml │ kubernetes │        35         │
+└─────────────────────────────────┴────────────┴───────────────────┘
+Legend:
+- '-': Not scanned
+- '0': Clean (no security findings detected)
+
+
+rendered-orders-vulnerable.yaml (kubernetes)
+============================================
+Tests: 134 (SUCCESSES: 99, FAILURES: 35)
+Failures: 35 (UNKNOWN: 0, LOW: 22, MEDIUM: 7, HIGH: 6, CRITICAL: 0)
+
+KSV-0001 (MEDIUM): Container 'orders-chart' of Deployment 'release-name-orders-chart' should set 'securityContext.allowPrivilegeEscalation' to false
+════════════════════════════════════════════════════════════════════════════
+A program inside the container can elevate its own privileges and run as root, which might give the program control over the container and node.
+
+See https://avd.aquasec.com/misconfig/ksv-0001
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0001 (MEDIUM): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should set 'securityContext.allowPrivilegeEscalation' to false
+════════════════════════════════════════════════════════════════════════════
+A program inside the container can elevate its own privileges and run as root, which might give the program control over the container and node.
+
+See https://avd.aquasec.com/misconfig/ksv-0001
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0003 (LOW): Container 'orders-chart' of Deployment 'release-name-orders-chart' should add 'ALL' to 'securityContext.capabilities.drop'
+════════════════════════════════════════════════════════════════════════════
+The container should drop all default capabilities and add only those that are needed for its execution.
+
+See https://avd.aquasec.com/misconfig/ksv-0003
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0003 (LOW): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should add 'ALL' to 'securityContext.capabilities.drop'
+════════════════════════════════════════════════════════════════════════════
+The container should drop all default capabilities and add only those that are needed for its execution.
+
+See https://avd.aquasec.com/misconfig/ksv-0003
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0004 (LOW): Container 'orders-chart' of 'deployment' 'release-name-orders-chart' in 'default' namespace should set securityContext.capabilities.drop
+════════════════════════════════════════════════════════════════════════════
+Security best practices require containers to run with minimal required capabilities.
+
+See https://avd.aquasec.com/misconfig/ksv-0004
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0004 (LOW): Container 'wget' of 'pod' 'release-name-orders-chart-test-connection' in 'default' namespace should set securityContext.capabilities.drop
+════════════════════════════════════════════════════════════════════════════
+Security best practices require containers to run with minimal required capabilities.
+
+See https://avd.aquasec.com/misconfig/ksv-0004
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0011 (LOW): Container 'orders-chart' of Deployment 'release-name-orders-chart' should set 'resources.limits.cpu'
+════════════════════════════════════════════════════════════════════════════
+Enforcing CPU limits prevents DoS via resource exhaustion.
+
+See https://avd.aquasec.com/misconfig/ksv-0011
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0011 (LOW): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should set 'resources.limits.cpu'
+════════════════════════════════════════════════════════════════════════════
+Enforcing CPU limits prevents DoS via resource exhaustion.
+
+See https://avd.aquasec.com/misconfig/ksv-0011
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0012 (MEDIUM): Container 'orders-chart' of Deployment 'release-name-orders-chart' should set 'securityContext.runAsNonRoot' to true
+════════════════════════════════════════════════════════════════════════════
+Force the running image to run as a non-root user to ensure least privileges.
+
+See https://avd.aquasec.com/misconfig/ksv-0012
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0012 (MEDIUM): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should set 'securityContext.runAsNonRoot' to true
+════════════════════════════════════════════════════════════════════════════
+Force the running image to run as a non-root user to ensure least privileges.
+
+See https://avd.aquasec.com/misconfig/ksv-0012
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0013 (MEDIUM): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should specify an image tag
+════════════════════════════════════════════════════════════════════════════
+It is best to avoid using the ':latest' image tag when deploying containers in production. Doing so makes it hard to track which version of the image is running, and hard to roll back the version.
+
+See https://avd.aquasec.com/misconfig/ksv-0013
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0014 (HIGH): Container 'orders-chart' of Deployment 'release-name-orders-chart' should set 'securityContext.readOnlyRootFilesystem' to true
+════════════════════════════════════════════════════════════════════════════
+An immutable root file system prevents applications from writing to their local disk. This can limit intrusions, as attackers will not be able to tamper with the file system or write foreign executables to disk.
+
+See https://avd.aquasec.com/misconfig/ksv-0014
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0014 (HIGH): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should set 'securityContext.readOnlyRootFilesystem' to true
+════════════════════════════════════════════════════════════════════════════
+An immutable root file system prevents applications from writing to their local disk. This can limit intrusions, as attackers will not be able to tamper with the file system or write foreign executables to disk.
+
+See https://avd.aquasec.com/misconfig/ksv-0014
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0015 (LOW): Container 'orders-chart' of Deployment 'release-name-orders-chart' should set 'resources.requests.cpu'
+════════════════════════════════════════════════════════════════════════════
+When containers have resource requests specified, the scheduler can make better decisions about which nodes to place pods on, and how to deal with resource contention.
+
+See https://avd.aquasec.com/misconfig/ksv-0015
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0015 (LOW): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should set 'resources.requests.cpu'
+════════════════════════════════════════════════════════════════════════════
+When containers have resource requests specified, the scheduler can make better decisions about which nodes to place pods on, and how to deal with resource contention.
+
+See https://avd.aquasec.com/misconfig/ksv-0015
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0016 (LOW): Container 'orders-chart' of Deployment 'release-name-orders-chart' should set 'resources.requests.memory'
+════════════════════════════════════════════════════════════════════════════
+When containers have memory requests specified, the scheduler can make better decisions about which nodes to place pods on, and how to deal with resource contention.
+
+See https://avd.aquasec.com/misconfig/ksv-0016
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0016 (LOW): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should set 'resources.requests.memory'
+════════════════════════════════════════════════════════════════════════════
+When containers have memory requests specified, the scheduler can make better decisions about which nodes to place pods on, and how to deal with resource contention.
+
+See https://avd.aquasec.com/misconfig/ksv-0016
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0018 (LOW): Container 'orders-chart' of Deployment 'release-name-orders-chart' should set 'resources.limits.memory'
+════════════════════════════════════════════════════════════════════════════
+Enforcing memory limits prevents DoS via resource exhaustion.
+
+See https://avd.aquasec.com/misconfig/ksv-0018
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0018 (LOW): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should set 'resources.limits.memory'
+════════════════════════════════════════════════════════════════════════════
+Enforcing memory limits prevents DoS via resource exhaustion.
+
+See https://avd.aquasec.com/misconfig/ksv-0018
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0020 (LOW): Container 'orders-chart' of Deployment 'release-name-orders-chart' should set 'securityContext.runAsUser' > 10000
+════════════════════════════════════════════════════════════════════════════
+Force the container to run with user ID > 10000 to avoid conflicts with the host’s user table.
+
+See https://avd.aquasec.com/misconfig/ksv-0020
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0020 (LOW): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should set 'securityContext.runAsUser' > 10000
+════════════════════════════════════════════════════════════════════════════
+Force the container to run with user ID > 10000 to avoid conflicts with the host’s user table.
+
+See https://avd.aquasec.com/misconfig/ksv-0020
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0021 (LOW): Container 'orders-chart' of Deployment 'release-name-orders-chart' should set 'securityContext.runAsGroup' > 10000
+════════════════════════════════════════════════════════════════════════════
+Force the container to run with group ID > 10000 to avoid conflicts with the host’s user table.
+
+See https://avd.aquasec.com/misconfig/ksv-0021
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0021 (LOW): Container 'wget' of Pod 'release-name-orders-chart-test-connection' should set 'securityContext.runAsGroup' > 10000
+════════════════════════════════════════════════════════════════════════════
+Force the container to run with group ID > 10000 to avoid conflicts with the host’s user table.
+
+See https://avd.aquasec.com/misconfig/ksv-0021
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0030 (LOW): Either Pod or Container should set 'securityContext.seccompProfile.type' to 'RuntimeDefault'
+════════════════════════════════════════════════════════════════════════════
+According to pod security standard 'Seccomp', the RuntimeDefault seccomp profile must be required, or allow specific additional profiles.
+
+See https://avd.aquasec.com/misconfig/ksv-0030
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0030 (LOW): Either Pod or Container should set 'securityContext.seccompProfile.type' to 'RuntimeDefault'
+════════════════════════════════════════════════════════════════════════════
+According to pod security standard 'Seccomp', the RuntimeDefault seccomp profile must be required, or allow specific additional profiles.
+
+See https://avd.aquasec.com/misconfig/ksv-0030
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0104 (MEDIUM): container "orders-chart" of deployment "release-name-orders-chart" in "default" namespace should specify a seccomp profile
+════════════════════════════════════════════════════════════════════════════
+A program inside the container can bypass Seccomp protection policies.
+
+See https://avd.aquasec.com/misconfig/ksv-0104
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0104 (MEDIUM): container "wget" of pod "release-name-orders-chart-test-connection" in "default" namespace should specify a seccomp profile
+════════════════════════════════════════════════════════════════════════════
+A program inside the container can bypass Seccomp protection policies.
+
+See https://avd.aquasec.com/misconfig/ksv-0104
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0106 (LOW): container should drop all
+════════════════════════════════════════════════════════════════════════════
+Containers must drop ALL capabilities, and are only permitted to add back the NET_BIND_SERVICE capability.
+
+See https://avd.aquasec.com/misconfig/ksv-0106
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0106 (LOW): container should drop all
+════════════════════════════════════════════════════════════════════════════
+Containers must drop ALL capabilities, and are only permitted to add back the NET_BIND_SERVICE capability.
+
+See https://avd.aquasec.com/misconfig/ksv-0106
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0110 (LOW): deployment release-name-orders-chart in default namespace should set metadata.namespace to a non-default namespace
+════════════════════════════════════════════════════════════════════════════
+Checks whether a workload is running in the default namespace.
+
+See https://avd.aquasec.com/misconfig/ksv-0110
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:38-45
+────────────────────────────────────────────────────────────────────────────
+  38 ┌ apiVersion: apps/v1
+  39 │ kind: Deployment
+  40 │ metadata:
+  41 │   name: release-name-orders-chart
+  42 │   labels:
+  43 │     helm.sh/chart: orders-chart-0.1.0
+  44 │     app.kubernetes.io/name: orders-chart
+  45 └     app.kubernetes.io/instance: release-name
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0110 (LOW): pod release-name-orders-chart-test-connection in default namespace should set metadata.namespace to a non-default namespace
+════════════════════════════════════════════════════════════════════════════
+Checks whether a workload is running in the default namespace.
+
+See https://avd.aquasec.com/misconfig/ksv-0110
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:97-106
+────────────────────────────────────────────────────────────────────────────
+  97 ┌ # Source: orders-chart/templates/tests/test-connection.yaml
+  98 │ apiVersion: v1
+  99 │ kind: Pod
+ 100 │ metadata:
+ 101 │   name: "release-name-orders-chart-test-connection"
+ 102 │   labels:
+ 103 │     helm.sh/chart: orders-chart-0.1.0
+ 104 │     app.kubernetes.io/name: orders-chart
+ 105 │     app.kubernetes.io/instance: release-name
+ 106 └     app.kubernetes.io/version: "1.16.0"
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0118 (HIGH): container release-name-orders-chart in default namespace is using the default security context
+════════════════════════════════════════════════════════════════════════════
+Security context controls the allocation of security parameters for the pod/container/volume, ensuring the appropriate level of protection. Relying on default security context may expose vulnerabilities to potential attacks that rely on privileged access.
+
+See https://avd.aquasec.com/misconfig/ksv-0118
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:63-93
+────────────────────────────────────────────────────────────────────────────
+  63 ┌       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 │           ports:
+  69 │             - name: http
+  70 │               containerPort: 3000
+  71 └               protocol: TCP
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0118 (HIGH): container release-name-orders-chart-test-connection in default namespace is using the default security context
+════════════════════════════════════════════════════════════════════════════
+Security context controls the allocation of security parameters for the pod/container/volume, ensuring the appropriate level of protection. Relying on default security context may expose vulnerabilities to potential attacks that rely on privileged access.
+
+See https://avd.aquasec.com/misconfig/ksv-0118
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:109-112
+────────────────────────────────────────────────────────────────────────────
+ 109 ┌     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 └     - name: wget
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0118 (HIGH): deployment release-name-orders-chart in default namespace is using the default security context, which allows root privileges
+════════════════════════════════════════════════════════════════════════════
+Security context controls the allocation of security parameters for the pod/container/volume, ensuring the appropriate level of protection. Relying on default security context may expose vulnerabilities to potential attacks that rely on privileged access.
+
+See https://avd.aquasec.com/misconfig/ksv-0118
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:60-93
+────────────────────────────────────────────────────────────────────────────
+  60 ┌         app.kubernetes.io/version: "1.16.0"
+  61 │         app.kubernetes.io/managed-by: Helm
+  62 │     spec:
+  63 │       serviceAccountName: release-name-orders-chart
+  64 │       containers:
+  65 │         - name: orders-chart
+  66 │           image: "orders-service:v1"
+  67 │           imagePullPolicy: Never
+  68 └           ports:
+  ..   
+────────────────────────────────────────────────────────────────────────────
+
+
+KSV-0118 (HIGH): pod release-name-orders-chart-test-connection in default namespace is using the default security context, which allows root privileges
+════════════════════════════════════════════════════════════════════════════
+Security context controls the allocation of security parameters for the pod/container/volume, ensuring the appropriate level of protection. Relying on default security context may expose vulnerabilities to potential attacks that rely on privileged access.
+
+See https://avd.aquasec.com/misconfig/ksv-0118
+────────────────────────────────────────────────────────────────────────────
+ rendered-orders-vulnerable.yaml:107-113
+────────────────────────────────────────────────────────────────────────────
+ 107 ┌     app.kubernetes.io/managed-by: Helm
+ 108 │   annotations:
+ 109 │     "helm.sh/hook": test
+ 110 │ spec:
+ 111 │   containers:
+ 112 │     - name: wget
+ 113 └       image: busybox
+────────────────────────────────────────────────────────────────────────────
+
+

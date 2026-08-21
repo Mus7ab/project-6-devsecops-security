@@ -48,3 +48,54 @@
 This confirms the fix takes effect at runtime, not just in the static Dockerfile instructions.
 
 **Status:** Remediated and verified via both static analysis and direct runtime confirmation.
+
+---
+
+## Remediation 3: Orders Helm Chart — Missing Pod/Container Security Context
+
+**Related finding:** `docs/findings.md` — Finding 5
+
+**Root cause:** `values.yaml` shipped with Helm's default scaffold — `podSecurityContext: {}` and `securityContext: {}` — leaving all hardening options commented out and unenabled.
+
+**Remediation decision process:**
+1. Considered whether `readOnlyRootFilesystem: true` could break the running application before applying it — inspected `services/orders/app.js` for filesystem writes (`grep` for `fs.writeFile`, `createWriteStream`, etc.) and found none, but treated this as a strong signal rather than a guarantee, since dependencies (npm, Express) could write outside the visible application code.
+2. Rather than skip the control or risk breaking the app, added an explicit `emptyDir` volume mounted at `/tmp` alongside the read-only root filesystem — providing a minimal, scoped writable surface instead of leaving the entire filesystem writable.
+
+**Fix applied (in `values.yaml`):**
+```yaml
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+volumes:
+  - name: tmp
+    emptyDir: {}
+
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp
+```
+
+**Verification — static analysis:**
+- Trivy: 35 → 23 failures. Every finding referencing the actual `orders-chart` container's security context (`KSV-0001`, `0003`, `0004`, `0012`, `0014`, `0020`, `0021`, `0030`, `0104`, `0106`, `0118`) resolved. Remaining findings after the fix belong exclusively to the separate `wget` test-connection pod (documented in Finding 6) or to out-of-scope domains (resource limits, namespace). See `evidence/before/trivy_k8s_securitycontext.txt` and `evidence/after/trivy_k8s_securitycontext.txt`.
+
+**Verification — live runtime deployment (not just static analysis):**
+1. Deployed the remediated chart to an isolated namespace (`security-verify`) on the existing local `kind` cluster (`project3-local`) — no AWS cost involved.
+2. Initial deployment failed with `CreateContainerConfigError` — investigated via `kubectl describe pod`, found the cause was missing `orders-config` ConfigMap and `orders-secret` Secret in the new namespace (a namespace-isolation artifact, unrelated to the security context change). Created both using the same non-sensitive demo values already verified safe in Project 3.
+3. Redeployed — both pods reached `1/1 Running`, passing the `/health` readiness probe (confirming the application itself started and responded successfully under the new security context).
+4. Directly confirmed the effective container identity via `kubectl exec ... -- id`: `uid=10001 gid=10001 groups=10001` — matching the configured `runAsUser`/`runAsGroup` exactly, on a live running container, not inferred from configuration.
+5. Cleaned up the test namespace after verification (`kubectl delete namespace security-verify`).
+
+**Why this verification matters more than the static scan alone:** A clean scanner result only proves the manifest declares the right configuration — it does not prove the application still functions under that configuration. This is the first finding in the project verified through an actual live deployment rather than static analysis alone, directly closing the gap between "scanner passed" and "control applied AND application still works," per the project's evidence-based philosophy.
+
+**Status:** Remediated and verified via static analysis, live deployment, and direct runtime inspection.
