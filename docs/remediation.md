@@ -99,3 +99,43 @@ volumeMounts:
 **Why this verification matters more than the static scan alone:** A clean scanner result only proves the manifest declares the right configuration — it does not prove the application still functions under that configuration. This is the first finding in the project verified through an actual live deployment rather than static analysis alone, directly closing the gap between "scanner passed" and "control applied AND application still works," per the project's evidence-based philosophy.
 
 **Status:** Remediated and verified via static analysis, live deployment, and direct runtime inspection.
+
+---
+
+## Remediation 4: Orders API — Throttling Added as Compensating Control for Public Endpoint
+
+**Related finding:** `docs/findings.md` — Finding 7
+
+**Root cause:** `POST /orders` is an intentionally public, unauthenticated API (confirmed via project README and live usage example), but had no throttling or rate-limiting configured at any level, leaving it fully exposed to abuse and cost-amplification.
+
+**Remediation decision process:**
+1. Initial hypothesis, based on `CKV_AWS_309`, was that missing `authorization_type` was the core vulnerability requiring authentication to be added.
+2. Verified against the project's own README before acting — found explicit documentation and a live `curl` example confirming the public, unauthenticated design was intentional, not an oversight.
+3. Revised the finding: the real gap was the *absence of a compensating control* for a deliberately public endpoint, not the absence of authentication itself.
+4. Evaluated `AWS_IAM`, `CUSTOM`, and `JWT` as authorization options, and rejected all three — each would contradict the documented public-API design and require architecture changes outside this finding's scope.
+5. Selected throttling as the appropriate compensating control: mitigates the actual risk (abuse/cost-amplification) without altering the intended trust model.
+
+**Fix applied (in `terraform/modules/api-gateway/main.tf`):**
+```hcl
+resource "aws_apigatewayv2_stage" "default" {
+  api_id      = aws_apigatewayv2_api.orders.id
+  name        = "$default"
+  auto_deploy = true
+
+  default_route_settings {
+    throttling_burst_limit = 20
+    throttling_rate_limit  = 10
+  }
+}
+```
+
+**Verification — static analysis:**
+- Ran Trivy and Checkov before and after. Failure counts and specific rule IDs are **identical** in both scans (`AWS-0001`/`CKV_AWS_76` for access logging, `CKV_AWS_309` for authorization type — both pre-existing, unrelated to this fix).
+- This is expected and does not indicate the fix failed: neither tool has a rule that checks for API Gateway throttling configuration at all. Confirmed the `default_route_settings` block with `throttling_burst_limit`/`throttling_rate_limit` renders correctly in the Terraform file (visible in the scan's own code-context output at `main.tf:28-31`), meaning the configuration is syntactically valid and present — the scanners simply have no corresponding check to evaluate it against.
+- See `evidence/before/trivy_api_gateway.txt`, `evidence/before/checkov_api_gateway.txt`, `evidence/after/trivy_api_gateway.txt`, `evidence/after/checkov_api_gateway.txt`.
+
+**Known limitation of this verification:** Because this is a serverless AWS resource (API Gateway + Lambda), verifying the throttling actually takes effect under real request load would require deploying to AWS and sending live traffic — out of scope per the project's cost-safety approach (unlike Phase 3's Kubernetes verification, this can't be tested for free on local infrastructure). Verification here is therefore limited to confirming valid Terraform syntax and correct placement, not live enforcement behavior. If ported to Project 5's actual environment, load-testing the throttle limits before relying on them in production would be a necessary follow-up.
+
+**`authorization_type` (CKV_AWS_309) — not remediated, documented exception:** See the Suppression/Exception record in `docs/findings.md` Finding 7. This is a deliberate decision, not an oversight — changing it would contradict verified project intent.
+
+**Status:** Throttling remediated, verified at the Terraform-syntax level (scanner coverage gap prevents automated verification). Authorization type deliberately left as-is per documented design, with a formal exception record.

@@ -94,3 +94,44 @@ The following real findings from the same scan were identified but not remediate
 - **Default namespace usage (`KSV-0110`, `CKV_K8S_21`) and missing NetworkPolicy (`CKV2_K8S_6`, Checkov-only):** Real architectural findings — namespace segmentation and network policy enforcement are legitimate Kubernetes security controls, but represent a larger structural change than a `values.yaml` edit. Documented honestly as a recommendation rather than forced into today's session.
 
 **Status:** Documented, not remediated — candidates for future work if this project's scope is extended.
+
+---
+
+## Finding 7: Orders API — Public Endpoint with No Throttling (Compensating Control for Intentional NONE Authorization)
+
+- **Domain:** Application/Serverless Security
+- **Source project:** Project 5 (serverless-orders) — `terraform/modules/api-gateway/main.tf`
+- **Asset:** `aws_apigatewayv2_route.post_orders` (`POST /orders`), `aws_apigatewayv2_stage.default`
+- **Detection tools:** Checkov (`CKV_AWS_309` — authorization type). Trivy did not flag the missing authorization at all.
+- **Investigation process:** Initial hypothesis was "missing auth = vulnerability." Verified against the project's own README, which explicitly documents `POST /orders` as a public, unauthenticated API with a plain `curl` usage example — no credentials, no signing. This confirmed `authorization_type = NONE` is intentional design, not an oversight, changing the correct finding from "add authentication" to "verify compensating controls exist for a deliberately public endpoint."
+- **Root cause (revised finding):** No throttling/rate-limiting configured at the stage or route level (`grep` for `throttle`/`rate_limit`/`burst` across the module returned no results) — meaning a public, unauthenticated endpoint has no mitigation against abuse or cost-amplification (each request cascades through Lambda → DynamoDB → EventBridge → SNS → 3 consumer Lambdas).
+- **Risk:** Unmitigated flooding of the endpoint could drive significant AWS cost amplification across 5 chained services, and/or allow bulk injection of fabricated orders into DynamoDB.
+- **Fix applied:** Added `default_route_settings` to `aws_apigatewayv2_stage.default` with `throttling_burst_limit = 20` and `throttling_rate_limit = 10`.
+- **Scanner coverage gap (notable finding in itself):** Neither Trivy nor Checkov has any rule checking for API Gateway throttling configuration. Before/after scans show byte-for-byte identical failure counts and IDs — the fix is real and verified structurally (see Remediation 4), but is invisible to both static analysis tools. This is a genuine tool-coverage limitation, not a failed remediation — distinct from Day 1's "scanner didn't catch a known issue" pattern, this is "no rule for this control category exists in either tool at all."
+- **`CKV_AWS_309` status:** Deliberately left failing. Documented as an accepted exception below, not remediated, since changing `authorization_type` would contradict the project's documented public-API design.
+- **Evidence:** `evidence/before/trivy_api_gateway.txt`, `evidence/before/checkov_api_gateway.txt`, `evidence/after/trivy_api_gateway.txt`, `evidence/after/checkov_api_gateway.txt`
+- **Status:** Remediated (throttling) and documented exception (authorization) — see `docs/remediation.md`
+
+**Suppression/Exception record for `CKV_AWS_309`:**
+- **Finding:** API GatewayV2 route does not specify an authorization type.
+- **Reason:** `POST /orders` is an intentionally public, unauthenticated API per documented project design (README, confirmed via live `curl` usage example with no credentials).
+- **Risk:** Any unauthenticated caller can invoke the endpoint.
+- **Compensating control:** Throttling (`throttling_burst_limit = 20`, `throttling_rate_limit = 10`) mitigates abuse/cost-amplification without contradicting the public-API design. Full authentication (`AWS_IAM`/`JWT`) was considered and rejected as architecturally inappropriate for a public order-placement endpoint.
+- **Approval:** Self-approved for this portfolio exercise, based on verified project documentation of intended design.
+- **Review/Expiration:** Revisit if the project's intended consumer model changes (e.g., if the API is no longer meant to be public).
+
+---
+
+## Finding 8: API Gateway Access Logging Not Configured
+
+- **Domain:** Application/Serverless Security
+- **Source project:** Project 5 (serverless-orders) — `terraform/modules/api-gateway/main.tf`
+- **Asset:** `aws_apigatewayv2_stage.default`
+- **Detection tools:** Trivy (`AWS-0001`, MEDIUM), Checkov (`CKV_AWS_76`)
+- **Description:** No access log settings configured on the API Gateway stage — meaning there is no request-level audit trail (caller IP, request path, response code, timing) for `POST /orders`.
+- **Risk:** Reduced ability to detect or investigate abuse patterns after the fact — this is a detective/observability control, distinct from Finding 7's preventive throttling control.
+- **Priority:** Medium/Low — real finding, but lower urgency than the public-auth/throttling question, and does not block the primary threat (unauthenticated abuse is already mitigated by Finding 7's throttling fix).
+- **Decision:** Deprioritized given remaining project scope (4 days, 2 phases remaining at time of this finding). Not a scope-avoidance decision — a deliberate triage call distinguishing "quick to implement" from "necessary to fix now," per the project's Definition of Done.
+- **Recommendation:** Enable access logging for improved auditability and abuse investigation if this project's scope is extended.
+- **Evidence:** Same scan files as Finding 7 (`evidence/before/trivy_api_gateway.txt`, `evidence/after/trivy_api_gateway.txt`)
+- **Status:** Documented, not remediated — deliberately deprioritized

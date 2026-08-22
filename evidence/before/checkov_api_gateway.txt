@@ -1,0 +1,55 @@
+
+
+       _               _
+   ___| |__   ___  ___| | _______   __
+  / __| '_ \ / _ \/ __| |/ / _ \ \ / /
+ | (__| | | |  __/ (__|   < (_) \ V /
+  \___|_| |_|\___|\___|_|\_\___/ \_/
+
+By Prisma Cloud | version: 3.3.11 
+Update available 3.3.11 -> 3.3.13
+Run pip3 install -U checkov to update 
+
+
+terraform scan results:
+
+Passed checks: 4, Failed checks: 2, Skipped checks: 0
+
+Check: CKV_AWS_364: "Ensure that AWS Lambda function permissions delegated to AWS services are limited by SourceArn or SourceAccount"
+	PASSED for resource: aws_lambda_permission.api_gateway
+	File: /main.tf:25-31
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/bc-aws-364
+Check: CKV_AWS_301: "Ensure that AWS Lambda function is not publicly accessible"
+	PASSED for resource: aws_lambda_permission.api_gateway
+	File: /main.tf:25-31
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/bc-aws-301
+Check: CKV2_AWS_77: "Ensure AWS API Gateway Rest API attached WAFv2 WebACL is configured with AMR for Log4j Vulnerability"
+	PASSED for resource: aws_apigatewayv2_api.orders
+	File: /main.tf:1-4
+Check: CKV2_AWS_51: "Ensure AWS API Gateway endpoints uses client certificate authentication"
+	PASSED for resource: aws_apigatewayv2_stage.default
+	File: /main.tf:19-23
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-general-policies/bc-aws-2-51
+Check: CKV_AWS_309: "Ensure API GatewayV2 routes specify an authorization type"
+	FAILED for resource: aws_apigatewayv2_route.post_orders
+	File: /main.tf:13-17
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-iam-policies/bc-aws-309
+
+		13 | resource "aws_apigatewayv2_route" "post_orders" {
+		14 |   api_id    = aws_apigatewayv2_api.orders.id
+		15 |   route_key = "POST /orders"
+		16 |   target    = "integrations/${aws_apigatewayv2_integration.order_handler.id}"
+		17 | }
+
+Check: CKV_AWS_76: "Ensure API Gateway has Access Logging enabled"
+	FAILED for resource: aws_apigatewayv2_stage.default
+	File: /main.tf:19-23
+	Guide: https://docs.prismacloud.io/en/enterprise-edition/policy-reference/aws-policies/aws-logging-policies/logging-17
+
+		19 | resource "aws_apigatewayv2_stage" "default" {
+		20 |   api_id      = aws_apigatewayv2_api.orders.id
+		21 |   name        = "$default"
+		22 |   auto_deploy = true
+		23 | }
+
+
