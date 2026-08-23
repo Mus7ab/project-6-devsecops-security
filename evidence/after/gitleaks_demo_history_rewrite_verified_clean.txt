@@ -1,0 +1,24 @@
+Gitleaks Demonstration — Proper Remediation via History Rewrite
+====================================================================
+
+Reset the branch to the commit before the secret was ever introduced
+(git reset --hard, on an isolated, unpushed local branch only):
+
+$ git reset --hard fd06d21
+HEAD is now at fd06d21 feat: add application security findings...
+
+$ gitleaks detect --source . -v
+1:58PM INF 6 commits scanned.
+1:58PM INF no leaks found
+
+CONCLUSION: Zero leaks. The commit that introduced the secret no longer
+exists in this branch's history at all - this is the actual difference
+between "deleted the line" and "removed from history."
+
+IMPORTANT CAVEAT: This reset-based approach only works safely because this
+was an isolated, unpushed local branch. On a real/shared/already-pushed
+repository, the correct approach would be git filter-repo or BFG
+Repo-Cleaner (rewrites history properly across all branches), followed by
+a coordinated force-push and, most importantly, IMMEDIATE ROTATION of the
+exposed credential - since any commit ever pushed to a remote must be
+treated as compromised regardless of subsequent history rewriting.

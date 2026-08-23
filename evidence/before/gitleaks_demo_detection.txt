@@ -1,0 +1,20 @@
+Gitleaks Demonstration — Detection Evidence
+=============================================
+
+Command: gitleaks detect --source . -v
+Branch: secrets-demo (isolated test branch, later discarded)
+
+Finding:     ...WS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
+Secret:      AKIAIOSFODNN7EXAMPLE (AWS's own public documentation example key format - not a real credential)
+RuleID:      aws-access-token
+Entropy:     3.684184
+File:        secrets-security/vulnerable/config.py
+Line:        6
+Commit:      91b726b9ba4a99b52213e66595d958936b40b139
+Fingerprint: 91b726b9ba4a99b52213e66595d958936b40b139:secrets-security/vulnerable/config.py:aws-access-token:6
+Result:      1:55PM INF 7 commits scanned. | 1:55PM WRN leaks found: 1
+
+Notable: DATABASE_PASSWORD = "not-a-real-password-12345" was present in the
+same file and was NOT flagged - demonstrating gitleaks' pattern-based
+detection is strong for recognizable credential formats (AWS keys) and
+weaker for generic secrets without a distinctive signature.

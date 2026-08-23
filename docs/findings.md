@@ -135,3 +135,31 @@ The following real findings from the same scan were identified but not remediate
 - **Recommendation:** Enable access logging for improved auditability and abuse investigation if this project's scope is extended.
 - **Evidence:** Same scan files as Finding 7 (`evidence/before/trivy_api_gateway.txt`, `evidence/after/trivy_api_gateway.txt`)
 - **Status:** Documented, not remediated — deliberately deprioritized
+
+---
+
+## Finding 9: Secrets Scan — Portfolio Result (No Real Findings)
+
+- **Domain:** Secrets Security
+- **Scope:** Full git history of Project 1 (three-tier-webapp), Project 2 (microservices-orders-users), Project 3 (eks-kubernetes-microservices), Project 5 (serverless-orders), and Project 6 (this repository) — 70 total commits across 5 repositories.
+- **Detection tool:** gitleaks 8.16.0
+- **Result:** No leaks found in any repository.
+- **What this confirms:** The Git Discipline followed throughout Projects 1-6 (`.gitignore` before code, never committing real credentials, using GitHub Secrets for CI, using placeholder/demo values for local secret manifests) was actually effective — independently verified by a dedicated secret-scanning tool, not merely assumed from following a checklist.
+- **Honest framing:** This is a real, positive result — not a "finding" in the sense of something to remediate. Per project discipline, a clean scan is documented as evidence rather than skipped past, but it is explicitly not manufactured into a fake vulnerability.
+- **Status:** Verified clean. No remediation applicable.
+
+---
+
+## Finding 10: Secrets Security — Controlled Demonstration of Detect/Remediate/Verify Workflow
+
+- **Domain:** Secrets Security
+- **Nature:** This is a controlled demonstration, not a real finding recovered from the portfolio (see Finding 9). Conducted to prove the detect → remediate → rescan → verify workflow functions correctly, and to surface real lessons about how git-history-based secret scanning behaves.
+- **Method:** Created an isolated, never-pushed local branch (`secrets-demo`) containing a fake AWS-format access key (`AKIAIOSFODNN7EXAMPLE` — AWS's own public documentation example, not a functional credential) and a generic fake password, committed intentionally, then remediated.
+- **Detection tool:** gitleaks 8.16.0
+- **Key results:**
+  1. gitleaks correctly detected the AWS-format key (`RuleID: aws-access-token`) but did **not** detect the generic password string — a real scanner-coverage limitation, consistent with pattern-based detection being strong for recognizable credential formats and weaker for arbitrary secrets without a distinctive signature. This is the same class of limitation documented in Finding 7 (scanner coverage gaps are a recurring, legitimate theme across this project, not a one-off).
+  2. **Naive remediation (deleting the line in a new commit) did NOT resolve the finding.** Rescanning after deletion still detected the exact same leak, same commit hash, same fingerprint — proving the secret remains in git's object history and reachable, regardless of the current file state.
+  3. **Actual remediation required removing the commit from history entirely** (`git reset --hard` to before the secret was introduced, safe only because this was an isolated, unpushed branch). Rescanning after this confirmed zero leaks.
+- **Critical caveat for real-world use, not just this demo:** The reset-based approach used here is only safe on an isolated, never-pushed branch. On any repository that has been pushed/shared, the correct remediation is `git filter-repo` or BFG Repo-Cleaner plus a coordinated force-push — and most importantly, **immediate rotation of the exposed credential**, since any secret that was ever pushed to a remote must be treated as compromised regardless of subsequent history rewriting.
+- **Evidence:** `evidence/before/gitleaks_demo_detection.txt`, `evidence/after/gitleaks_demo_naive_removal_still_detected.txt`, `evidence/after/gitleaks_demo_history_rewrite_verified_clean.txt`
+- **Status:** Demonstration complete, workflow verified. No real secret was ever exposed to the public repository at any point.

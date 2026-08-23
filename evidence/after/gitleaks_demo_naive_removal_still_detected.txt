@@ -1,0 +1,15 @@
+Gitleaks Demonstration — Naive Removal Does NOT Remediate
+============================================================
+
+After deleting the secret from config.py in a NEW commit (naive fix),
+re-running gitleaks detect --source . -v on the same branch:
+
+Finding:     ...WS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE"
+RuleID:      aws-access-token
+Commit:      91b726b9ba4a99b52213e66595d958936b40b139  (SAME commit as before)
+Result:      1:56PM INF 8 commits scanned. | 1:56PM WRN leaks found: 1
+
+CONCLUSION: The leak is STILL detected, identical fingerprint, because the
+secret remains in the git object history at commit 91b726b9, even though
+the current file no longer contains it. Editing a file in a later commit
+does not remove the secret from earlier commits still reachable in history.

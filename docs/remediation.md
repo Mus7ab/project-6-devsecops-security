@@ -139,3 +139,13 @@ resource "aws_apigatewayv2_stage" "default" {
 **`authorization_type` (CKV_AWS_309) — not remediated, documented exception:** See the Suppression/Exception record in `docs/findings.md` Finding 7. This is a deliberate decision, not an oversight — changing it would contradict verified project intent.
 
 **Status:** Throttling remediated, verified at the Terraform-syntax level (scanner coverage gap prevents automated verification). Authorization type deliberately left as-is per documented design, with a formal exception record.
+
+---
+
+## Remediation 5: Secrets Security — No Real Remediation Required (Demonstration Only)
+
+**Related findings:** `docs/findings.md` — Finding 9 (portfolio scan, clean) and Finding 10 (controlled demonstration)
+
+**Summary:** No real secrets were found anywhere in the portfolio (Finding 9), so no remediation was necessary against real project code. Finding 10's demonstration fully documents the detect → remediate → rescan → verify workflow, including the critical discovery that naive line-deletion does not remove a secret from git history, and that proper remediation requires history rewriting plus credential rotation for any real-world equivalent. Full detail, evidence, and the reset-based remediation steps used are documented directly in Finding 10 rather than repeated here.
+
+**Status:** N/A (portfolio) / Demonstration verified (see Finding 10).
