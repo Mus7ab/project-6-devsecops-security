@@ -11,6 +11,7 @@ resource "aws_apigatewayv2_integration" "order_handler" {
 }
 
 resource "aws_apigatewayv2_route" "post_orders" {
+  #checkov:skip=CKV_AWS_309:Public unauthenticated API is intentional (see README) - throttling on the stage is the compensating abuse-control measure. See Project 6 docs/findings.md Finding 7.
   api_id    = aws_apigatewayv2_api.orders.id
   route_key = "POST /orders"
   target    = "integrations/${aws_apigatewayv2_integration.order_handler.id}"

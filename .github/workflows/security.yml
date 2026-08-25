@@ -1,0 +1,95 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  iac-security:
+    name: IaC Security (Trivy + Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy (IaC)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: iac-security/remediated/
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
+      - name: Run Checkov (IaC)
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: iac-security/remediated/
+          soft_fail: true
+
+  container-security:
+    name: Container Security (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy (Dockerfile misconfig)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: container-security/remediated/
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
+  kubernetes-security:
+    name: Kubernetes Security (Trivy + Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Render Helm chart
+        run: helm template kubernetes-security/remediated/orders-chart/ > /tmp/rendered-k8s.yaml
+
+      - name: Run Trivy (Kubernetes)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: /tmp/rendered-k8s.yaml
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
+  application-security:
+    name: Application Security (Trivy + Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy (API Gateway)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: config
+          scan-ref: application-security/remediated/
+          exit-code: 1
+          severity: HIGH,CRITICAL
+
+      - name: Run Checkov (API Gateway)
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: application-security/remediated/
+          soft_fail: true
+
+  secrets-security:
+    name: Secrets Scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
