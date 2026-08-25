@@ -26,9 +26,17 @@ IaC Security, Container Security, Kubernetes Security, Application Security, and
 
 ## Validation Status
 
-- ✅ **YAML syntax validated locally** (`python3 -c "import yaml; yaml.safe_load(...)"` confirms the file parses correctly)
+- ✅ **Ynano docs/ci-cd-pipeline.mdAML syntax validated locally**
 - ✅ **Inline Checkov suppression validated locally** — confirmed via direct `checkov -d` CLI runs that `CKV_AWS_309` shows as SKIPPED with the documented justification visible in output
-- ❌ **Not yet validated on a live GitHub Actions runner** — this workflow has not yet been triggered by an actual push/PR to observe real runner behavior, action version compatibility, or live pass/fail results
+- ✅ **Validated live on GitHub Actions runners** — see "Real CI-Caught Finding" below
+
+## Real CI-Caught Finding (Live Evidence)
+
+On the first live run of this workflow (run #1), the **Kubernetes Security** job failed with exit code 1. Trivy detected 3 HIGH-severity findings (`KSV-0014`, `KSV-0118` x2) on the Helm chart's `wget` test-connection pod — a gap that had been identified during manual review on Day 4 of this project (documented as Finding 6, "deliberately out-of-scope" at the time) but was never remediated.
+
+This is not a workflow bug — it is the pipeline correctly enforcing the documented HIGH/CRITICAL gating policy against a real, previously-known gap. Rather than suppress the finding to force a green build, the `wget` test pod's security context was properly remediated (`podSecurityContext`/`securityContext` added to `templates/tests/test-connection.yaml`, same pattern as the main Deployment fix). Run #2, triggered by the fix commit, passed all 5 jobs with zero HIGH/CRITICAL findings remaining.
+
+**This is the strongest evidence in this project of a functioning security gate**: automated CI independently rediscovered a documented gap through enforcement rather than memory, and the fix was verified end-to-end on live infrastructure, not just locally.
 
 ## Future Improvement (if project scope is extended)
 
