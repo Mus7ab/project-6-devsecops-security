@@ -3,7 +3,7 @@
 ## Finding 1: RDS Security Group — Unrestricted Egress
 
 - **Domain:** IaC Security
-- **Source project:** Project 1 (three-tier-webapp) — `terraform/security_groups.tf`
+- **Source project:** `three-tier-webapp` — `terraform/security_groups.tf`
 - **Asset:** `aws_security_group.rds`
 - **Detection tools:** Trivy, Checkov (both independently detected this)
 - **Rule IDs:**
@@ -22,22 +22,22 @@
 ## Finding 2: CI Pipeline IAM User — Overly Permissive, Not IaC-Managed
 
 - **Domain:** IaC Security (limitation of static analysis)
-- **Source project:** Project 1 (three-tier-webapp) — `.github/workflows/terraform.yml`
+- **Source project:** `three-tier-webapp` — `.github/workflows/terraform.yml`
 - **Asset:** IAM user referenced via GitHub Secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`), reportedly attached to `PowerUserAccess`
 - **Detection tools:** None — not detectable by Trivy or Checkov
-- **Description:** The CI/CD pipeline authenticates to AWS using long-lived IAM user credentials (not OIDC role assumption). This IAM user and its policy attachment are not defined anywhere in the Project 1 Terraform codebase — confirmed via repo-wide search (`grep -rn "PowerUserAccess"`, `grep -rln "aws_iam_user"`, both returned no results).
+- **Description:** The CI/CD pipeline authenticates to AWS using long-lived IAM user credentials (not OIDC role assumption). This IAM user and its policy attachment are not defined anywhere in the `three-tier-webapp` Terraform codebase — confirmed via repo-wide search (`grep -rn "PowerUserAccess"`, `grep -rln "aws_iam_user"`, both returned no results).
 - **Risk:** A CI credential with PowerUserAccess has near-admin blast radius across the AWS account if leaked or compromised (e.g., via a malicious PR, compromised GitHub Actions dependency, or leaked secret).
 - **Why this is a genuine limitation, not a scanner failure:** Trivy and Checkov analyze Terraform (`.tf`) files. Because this IAM user was provisioned outside Terraform (console or CLI), there is no resource for either tool to evaluate — this is a structural blind spot of IaC static analysis, not a rule-coverage gap.
 - **Priority:** High — but remediation is out of scope for a documentation-only exercise; requires either (a) codifying the IAM user in Terraform with least-privilege permissions so it becomes scannable, or (b) migrating CI to OIDC role assumption, eliminating long-lived credentials entirely.
 - **Evidence:** `.github/workflows/terraform.yml` (inspected directly), grep search output (not saved as a file — command and empty result documented here)
-- **Status:** Documented, not remediated — flagged as a recommendation for Project 1 going forward
+- **Status:** Documented, not remediated — flagged as a recommendation for `three-tier-webapp` going forward
 
 ---
 
 ## Finding 3: Orders/Users Service Dockerfile — Missing Non-Root USER
 
 - **Domain:** Container Security
-- **Source project:** Project 2 (microservices-orders-users) — `services/orders/Dockerfile`, `services/users/Dockerfile` (identical)
+- **Source project:** `microservices-orders-users` — `services/orders/Dockerfile`, `services/users/Dockerfile` (identical)
 - **Asset:** Container image built from `node:20-alpine`
 - **Detection tool:** Trivy (misconfiguration scan)
 - **Rule ID:** `DS-0002` — Severity: HIGH — "Specify at least 1 USER command in Dockerfile with non-root user as argument"
@@ -52,14 +52,14 @@
 ## Finding 4: OpenSSL CVEs in node:20-alpine Base Image — Accepted Risk (Upstream Not Yet Patched)
 
 - **Domain:** Container Security
-- **Source project:** Project 2 (microservices-orders-users) — base image `node:20-alpine`
+- **Source project:** `microservices-orders-users` — base image `node:20-alpine`
 - **Asset:** `libcrypto3` / `libssl3` packages (Alpine 3.23.4) inside the built container image
 - **Detection tool:** Trivy (vulnerability scan)
 - **Notable CVEs:** `CVE-2026-45447` (HIGH — Heap Use-After-Free in OpenSSL PKCS7_verify()), plus 12 additional MEDIUM/LOW OpenSSL CVEs — installed version `3.5.6-r0`, fixed version `3.5.7-r0`
 - **Description:** The current `node:20-alpine` image, as published, bundles an OpenSSL version with known CVEs. Confirmed via `docker pull node:20-alpine` that this is the latest available image under this tag (digest unchanged) — the patched OpenSSL version is not yet available upstream at this tag.
 - **Why this could not be remediated via a simple rebuild:** A base image rebuild only picks up a fix if the maintainer has published one. As of this scan, they have not.
 - **Risk:** The vulnerable OpenSSL library remains present inside the container regardless of network-layer controls.
-- **Exposure / Compensating control:** In Project 2's actual architecture, this container is not directly internet-facing — external HTTP/HTTPS traffic is routed through an Application Load Balancer (ALB), and ECS tasks run within private-subnet networking protected by security groups. This reduces the network paths through which the vulnerable library could be reached, but does not eliminate the vulnerability itself.
+- **Exposure / Compensating control:** In `microservices-orders-users`'s actual architecture, this container is not directly internet-facing — external HTTP/HTTPS traffic is routed through an Application Load Balancer (ALB), and ECS tasks run within private-subnet networking protected by security groups. This reduces the network paths through which the vulnerable library could be reached, but does not eliminate the vulnerability itself.
 - **Decision:** Accept temporarily, with monitoring. Re-scan periodically (or via CI once Phase 6 is built) and remediate via base image rebuild as soon as an upstream patch is published.
 - **Approval:** Self-approved for this portfolio exercise (no formal approval chain applicable).
 - **Review/Expiration:** Revisit at next scheduled scan; treat as expired/overdue if unresolved after 30 days from an upstream patch becoming available.
@@ -71,7 +71,7 @@
 ## Finding 5: Orders Helm Chart — Missing Pod/Container Security Context
 
 - **Domain:** Kubernetes Security
-- **Source project:** Project 3 (eks-kubernetes-microservices) — `orders-chart/values.yaml`, rendered via `orders-chart/templates/deployment.yaml`
+- **Source project:** `eks-kubernetes-microservices` — `orders-chart/values.yaml`, rendered via `orders-chart/templates/deployment.yaml`
 - **Asset:** Deployment `release-name-orders-chart` (orders-chart container)
 - **Detection tools:** Trivy, Checkov (both independently detected the same root cause via different rule sets)
 - **Key rule IDs:**
@@ -79,7 +79,7 @@
   - Checkov: `CKV_K8S_29`/`CKV_K8S_30` (no security context applied), `CKV_K8S_20` (privilege escalation), `CKV_K8S_23` (root containers), `CKV_K8S_37`/`CKV_K8S_28` (capabilities), `CKV_K8S_22` (read-only filesystem), `CKV_K8S_31` (seccomp)
 - **Root cause:** `values.yaml` shipped with the standard Helm scaffold defaults (`podSecurityContext: {}`, `securityContext: {}`) — the security hardening options were present in commented-out form but never enabled.
 - **Investigation method (before scanning):** Manually inspected `deployment.yaml`, identified that `securityContext` blocks are conditionally rendered via Helm's `{{- with }}` directive — meaning an empty `values.yaml` entry results in the block being omitted entirely from the rendered manifest, not defaulted to a safe value. Confirmed via `helm template` before running any scanner.
-- **Risk:** A compromised container process would run as root, retain default Linux capabilities, be able to write to its own root filesystem (enabling tampering/persistence), and escalate privileges — a substantially larger blast radius than the equivalent finding in Project 2's ECS containers (Finding 3), since a Kubernetes compromise can extend to node-level and cluster-level attack paths.
+- **Risk:** A compromised container process would run as root, retain default Linux capabilities, be able to write to its own root filesystem (enabling tampering/persistence), and escalate privileges — a substantially larger blast radius than the equivalent finding in `microservices-orders-users`'s ECS containers (Finding 3), since a Kubernetes compromise can extend to node-level and cluster-level attack paths.
 - **Evidence:** `evidence/before/trivy_k8s_securitycontext.txt`, `evidence/before/checkov_k8s_securitycontext.txt`
 - **Status:** Remediated and runtime-verified (see `docs/remediation.md`)
 
@@ -100,7 +100,7 @@ nano docs/findings.md
 ## Finding 7: Orders API — Public Endpoint with No Throttling (Compensating Control for Intentional NONE Authorization)
 
 - **Domain:** Application/Serverless Security
-- **Source project:** Project 5 (serverless-orders) — `terraform/modules/api-gateway/main.tf`
+- **Source project:** `serverless-orders` — `terraform/modules/api-gateway/main.tf`
 - **Asset:** `aws_apigatewayv2_route.post_orders` (`POST /orders`), `aws_apigatewayv2_stage.default`
 - **Detection tools:** Checkov (`CKV_AWS_309` — authorization type). Trivy did not flag the missing authorization at all.
 - **Investigation process:** Initial hypothesis was "missing auth = vulnerability." Verified against the project's own README, which explicitly documents `POST /orders` as a public, unauthenticated API with a plain `curl` usage example — no credentials, no signing. This confirmed `authorization_type = NONE` is intentional design, not an oversight, changing the correct finding from "add authentication" to "verify compensating controls exist for a deliberately public endpoint."
@@ -125,7 +125,7 @@ nano docs/findings.md
 ## Finding 8: API Gateway Access Logging Not Configured
 
 - **Domain:** Application/Serverless Security
-- **Source project:** Project 5 (serverless-orders) — `terraform/modules/api-gateway/main.tf`
+- **Source project:** `serverless-orders` — `terraform/modules/api-gateway/main.tf`
 - **Asset:** `aws_apigatewayv2_stage.default`
 - **Detection tools:** Trivy (`AWS-0001`, MEDIUM), Checkov (`CKV_AWS_76`)
 - **Description:** No access log settings configured on the API Gateway stage — meaning there is no request-level audit trail (caller IP, request path, response code, timing) for `POST /orders`.
@@ -141,7 +141,7 @@ nano docs/findings.md
 ## Finding 9: Secrets Scan — Portfolio Result (No Real Findings)
 
 - **Domain:** Secrets Security
-- **Scope:** Full git history of Project 1 (three-tier-webapp), Project 2 (microservices-orders-users), Project 3 (eks-kubernetes-microservices), Project 5 (serverless-orders), and Project 6 (this repository) — 70 total commits across 5 repositories.
+- **Scope:** Full git history of `three-tier-webapp`, `microservices-orders-users`, `eks-kubernetes-microservices`, `serverless-orders`, and this repository (`devsecops-security`) — 70 total commits across 5 repositories.
 - **Detection tool:** gitleaks 8.16.0
 - **Result:** No leaks found in any repository.
 - **What this confirms:** The Git Discipline followed throughout Projects 1-6 (`.gitignore` before code, never committing real credentials, using GitHub Secrets for CI, using placeholder/demo values for local secret manifests) was actually effective — independently verified by a dedicated secret-scanning tool, not merely assumed from following a checklist.

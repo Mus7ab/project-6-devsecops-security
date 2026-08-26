@@ -1,4 +1,4 @@
-# Project 6 — DevSecOps Security
+# DevSecOps Security
 
 A security retrofit across four previous portfolio projects — Terraform/IaC, containers, Kubernetes, and a serverless API — demonstrating a full security lifecycle: threat modeling, detection, triage, remediation, verification, and CI/CD enforcement, with evidence for every claim.
 
@@ -8,7 +8,7 @@ A security retrofit across four previous portfolio projects — Terraform/IaC, c
 
 ## Problem Statement
 
-Projects 1, 2, 3, and 5 of this portfolio were built to demonstrate infrastructure, containerization, Kubernetes, and serverless architecture — but none of them were built with a security review pass. This project asks a narrower, more honest question than "add security tools to everything": **for each of these four architectures, what real security risk exists, can it actually be demonstrated, and if so, can it be fixed and proven fixed — not just scanned and assumed fixed?**
+`three-tier-webapp`, `microservices-orders-users`, `eks-kubernetes-microservices`, and `serverless-orders` — four other repositories in this portfolio — were built to demonstrate infrastructure, containerization, Kubernetes, and serverless architecture
 
 Where a real risk existed and could be fixed without contradicting the original design, it was fixed and verified — in one case down to a live Kubernetes pod's effective user ID, in another down to a passing GitHub Actions run. Where a "finding" turned out to be intentional design (a public, unauthenticated API) or an unpatched upstream dependency, it was documented as an accepted exception with a compensating control — not silently suppressed to make a scanner green.
 
@@ -17,7 +17,7 @@ Where a real risk existed and could be fixed without contradicting the original 
 This repository does not deploy new infrastructure. It retrofits security analysis onto existing infrastructure definitions from four other repositories in this portfolio:
 
 | Source Project | Domain | What's Scanned Here |
-|---|---|---|
+|---|---|---|nano README.md
 | `three-tier-webapp` | IaC Security | Terraform security groups, IAM |
 | `microservices-orders-users` | Container Security | Dockerfile, built container image |
 | `eks-kubernetes-microservices` | Kubernetes Security | Rendered Helm chart manifests |
@@ -173,7 +173,7 @@ Where a level wasn't reached (e.g., no live AWS deployment for the API Gateway t
 
 - Checkov findings are not currently severity-gated in CI (see above)
 - API Gateway throttling fix was verified for correct Terraform syntax and placement, not live enforcement under real request load (would require AWS deployment, out of cost-safety scope)
-- The RDS egress fix (Finding 1) was verified via static analysis only — the original Project 1 infrastructure was not redeployed to confirm no application dependency was broken
+- The RDS egress fix (Finding 1) was verified via static analysis only — the original `three-tier-webapp` infrastructure was not redeployed to confirm no application dependency was broken
 - Namespace segmentation and NetworkPolicy enforcement (Kubernetes) were identified but not implemented — documented as a larger architectural change than this project's scope
 
 ## Cost Estimate
@@ -194,4 +194,4 @@ Not applicable — no cloud infrastructure was created by this project. The one 
 
 ---
 
-*Built as Project 6 of a 7-project AWS Cloud/DevOps portfolio. See [findings.md](docs/findings.md), [remediation.md](docs/remediation.md), and [ci-cd-pipeline.md](docs/ci-cd-pipeline.md) for full technical detail and evidence.*
+*The sixth project in a 7-repository AWS Cloud/DevOps portfolio. See [findings.md](docs/findings.md), [remediation.md](docs/remediation.md), and [ci-cd-pipeline.md](docs/ci-cd-pipeline.md) for full technical detail and evidence.*

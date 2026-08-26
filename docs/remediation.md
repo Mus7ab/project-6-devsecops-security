@@ -20,7 +20,7 @@
 - Re-ran Checkov: `CKV_AWS_382` changed from FAILED to PASSED — see `evidence/after/checkov_rds_egress.txt`
 - Both tools independently confirm the fix at the static-analysis level.
 
-**Known limitation of this verification:** This exercise scanned an isolated example file, not deployed infrastructure. Application-level verification — confirming the live Project 1 RDS instance has no legitimate outbound dependency that this change would break — was not performed, since doing so would require deploying real AWS infrastructure, which is out of scope for this documentation exercise per the project's cost-safety approach. If this fix were applied to the actual Project 1 environment, that verification step would be required before merging.
+**Known limitation of this verification:** This exercise scanned an isolated example file, not deployed infrastructure. Application-level verification — confirming the live `three-tier-webapp` RDS instance has no legitimate outbound dependency that this change would break — was not performed, since doing so would require deploying real AWS infrastructure, which is out of scope for this documentation exercise per the project's cost-safety approach. If this fix were applied to the actual `three-tier-webapp` environment, that verification step would be required before merging.
 
 **Status:** Remediated and verified at the static-analysis level. Application-level verification remains an open item if ported to production.
 
@@ -91,7 +91,7 @@ volumeMounts:
 
 **Verification — live runtime deployment (not just static analysis):**
 1. Deployed the remediated chart to an isolated namespace (`security-verify`) on the existing local `kind` cluster (`project3-local`) — no AWS cost involved.
-2. Initial deployment failed with `CreateContainerConfigError` — investigated via `kubectl describe pod`, found the cause was missing `orders-config` ConfigMap and `orders-secret` Secret in the new namespace (a namespace-isolation artifact, unrelated to the security context change). Created both using the same non-sensitive demo values already verified safe in Project 3.
+2. Initial deployment failed with `CreateContainerConfigError` — investigated via `kubectl describe pod`, found the cause was missing `orders-config` ConfigMap and `orders-secret` Secret in the new namespace (a namespace-isolation artifact, unrelated to the security context change). Created both using the same non-sensitive demo values already verified safe in `eks-kubernetes-microservices`.
 3. Redeployed — both pods reached `1/1 Running`, passing the `/health` readiness probe (confirming the application itself started and responded successfully under the new security context).
 4. Directly confirmed the effective container identity via `kubectl exec ... -- id`: `uid=10001 gid=10001 groups=10001` — matching the configured `runAsUser`/`runAsGroup` exactly, on a live running container, not inferred from configuration.
 5. Cleaned up the test namespace after verification (`kubectl delete namespace security-verify`).
@@ -134,7 +134,7 @@ resource "aws_apigatewayv2_stage" "default" {
 - This is expected and does not indicate the fix failed: neither tool has a rule that checks for API Gateway throttling configuration at all. Confirmed the `default_route_settings` block with `throttling_burst_limit`/`throttling_rate_limit` renders correctly in the Terraform file (visible in the scan's own code-context output at `main.tf:28-31`), meaning the configuration is syntactically valid and present — the scanners simply have no corresponding check to evaluate it against.
 - See `evidence/before/trivy_api_gateway.txt`, `evidence/before/checkov_api_gateway.txt`, `evidence/after/trivy_api_gateway.txt`, `evidence/after/checkov_api_gateway.txt`.
 
-**Known limitation of this verification:** Because this is a serverless AWS resource (API Gateway + Lambda), verifying the throttling actually takes effect under real request load would require deploying to AWS and sending live traffic — out of scope per the project's cost-safety approach (unlike Phase 3's Kubernetes verification, this can't be tested for free on local infrastructure). Verification here is therefore limited to confirming valid Terraform syntax and correct placement, not live enforcement behavior. If ported to Project 5's actual environment, load-testing the throttle limits before relying on them in production would be a necessary follow-up.
+**Known limitation of this verification:** Because this is a serverless AWS resource (API Gateway + Lambda), verifying the throttling actually takes effect under real request load would require deploying to AWS and sending live traffic — out of scope per the project's cost-safety approach (unlike Phase 3's Kubernetes verification, this can't be tested for free on local infrastructure). Verification here is therefore limited to confirming valid Terraform syntax and correct placement, not live enforcement behavior. If ported to `serverless-orders`'s actual environment, load-testing the throttle limits before relying on them in production would be a necessary follow-up.
 
 **`authorization_type` (CKV_AWS_309) — not remediated, documented exception:** See the Suppression/Exception record in `docs/findings.md` Finding 7. This is a deliberate decision, not an oversight — changing it would contradict verified project intent.
 
