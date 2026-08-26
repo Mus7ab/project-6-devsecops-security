@@ -60,6 +60,8 @@ flowchart TD
 | GitHub Actions | CI/CD enforcement of the above | All domains |
 
 ## Repository Structure
+
+```text
 devsecops-security/
 ├── iac-security/{vulnerable,remediated}/ # Terraform, RDS security group
 ├── container-security/{vulnerable,remediated}/ # Dockerfile + built image
@@ -68,10 +70,11 @@ devsecops-security/
 ├── secrets-security/ # gitleaks demo artifacts
 ├── .github/workflows/security.yml # CI/CD security pipeline
 ├── docs/
-│ ├── findings.md # All 10 findings, full detail
-│ ├── remediation.md # All 5 remediations, full detail
-│ └── ci-cd-pipeline.md # Pipeline design + live validation results
+│   ├── findings.md # All 10 findings, full detail
+│   ├── remediation.md # All 5 remediations, full detail
+│   └── ci-cd-pipeline.md # Pipeline design + live validation results
 └── evidence/{before,after}/ # Real scanner output, every finding
+```
 
 ## How to Explore This Repository
 
@@ -119,19 +122,20 @@ Summary of the gating policy:
 
 Full detail for all 10 findings, including rule IDs, risk reasoning, and evidence file paths: **[docs/findings.md](docs/findings.md)**
 
-| # | Domain | Finding | Status |
-|---|---|---|---|
-| 1 | IaC | RDS security group — unrestricted egress | ✅ Remediated |
-| 2 | IaC | CI IAM user — over-permissioned, not IaC-managed | 📋 Documented (out of scope) |
-| 3 | Container | Dockerfile — missing non-root `USER` | ✅ Remediated |
-| 4 | Container | OpenSSL CVEs in base image (upstream not yet patched) | ⚠️ Accepted risk, monitored |
-| 5 | Kubernetes | Helm chart — missing pod/container security context | ✅ Remediated, runtime-verified |
-| 6 | Kubernetes | Helm test pod — same gap, initially deprioritized | ✅ Remediated (caught live by CI, Phase 6) |
-| 7 | Application | Public API — no throttling (compensating control) | ✅ Remediated |
-| 7 | Application | Public API — no auth (`CKV_AWS_309`) | ⚠️ Accepted exception, by design |
-| 8 | Application | API Gateway — no access logging | 📋 Documented (deprioritized) |
-| 9 | Secrets | Portfolio-wide gitleaks scan (5 repos, 70 commits) | ✅ Verified clean |
-| 10 | Secrets | Controlled demonstration — detect/remediate/verify workflow | ✅ Demonstrated |
+| #  | Domain      | Finding                                                      | Status                                    |
+| -- | ----------- | ------------------------------------------------------------- | ------------------------------------------ |
+| 1  | IaC         | RDS security group — unrestricted egress                    | ✅ Remediated                              |
+| 2  | IaC         | CI IAM user — over-permissioned, not IaC-managed             | 📋 Documented (out of scope)              |
+| 3  | Container   | Dockerfile — missing non-root `USER`                         | ✅ Remediated                              |
+| 4  | Container   | OpenSSL CVEs in base image (upstream not yet patched)        | ⚠️ Accepted risk, monitored               |
+| 5  | Kubernetes  | Helm chart — missing pod/container security context          | ✅ Remediated, runtime-verified            |
+| 6  | Kubernetes  | Helm test pod — same gap, initially deprioritized             | ✅ Remediated (caught live by CI, Phase 6) |
+| 7  | Application | Public API — no throttling + no auth (`CKV_AWS_309`)          | ✅ Throttling remediated / ⚠️ Auth accepted exception, by design |
+| 8  | Application | API Gateway — no access logging                              | 📋 Documented (deprioritized)             |
+| 9  | Secrets     | Portfolio-wide gitleaks scan (5 repos, 70 commits)            | ✅ Verified clean                          |
+| 10 | Secrets     | Controlled demonstration — detect/remediate/verify workflow  | ✅ Demonstrated                            |
+
+*Numbering matches `docs/findings.md` exactly — Finding 7 covers two related decisions (throttling remediated, authorization type accepted as an exception) documented together since they resulted from the same investigation.*
 
 ## Remediation
 
